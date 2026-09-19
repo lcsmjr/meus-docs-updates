@@ -1,0 +1,195 @@
+name: Build and Publish MeusDocs Beta
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: meusdocs-public-beta
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+        with:
+          repository: lcsmjr/meus-docs
+          token: ${{ secrets.MEUSDOCS_SOURCE_TOKEN }}
+          path: source
+
+      - name: Validate required secrets
+        shell: bash
+        env:
+          SOURCE_TOKEN: ${{ secrets.MEUSDOCS_SOURCE_TOKEN }}
+          BETA_KEYSTORE_B64: ${{ secrets.MEUSDOCS_BETA_KEYSTORE_B64 }}
+        run: |
+          test -n "$SOURCE_TOKEN" || (echo "Missing MEUSDOCS_SOURCE_TOKEN" && exit 1)
+          test -n "$BETA_KEYSTORE_B64" || (echo "Missing MEUSDOCS_BETA_KEYSTORE_B64" && exit 1)
+
+      - name: Validate and extract MeusDocs source
+        shell: bash
+        run: |
+          echo "44b0b488202929034371567ba821323984cd19e6242b6cd3fb6cc86de9b5ddc6  source/ci/meusdocs_source.tar.gz" | sha256sum -c -
+          mkdir -p meusdocs_app
+          tar -xzf source/ci/meusdocs_source.tar.gz -C meusdocs_app
+
+      - name: Apply updater patch
+        shell: bash
+        run: |
+          mkdir -p meusdocs_app/lib/core/update
+          mkdir -p meusdocs_app/lib/features/profile
+          cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
+          cp source/ci/patches/lib/core/update/update_prompt.dart meusdocs_app/lib/core/update/
+          cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          pubspec = Path('meusdocs_app/pubspec.yaml')
+          text = pubspec.read_text()
+          text = text.replace('version: 0.1.0+1', 'version: 0.5.0+1')
+          if '  http: ^1.6.0' not in text:
+              text = text.replace(
+                  '  file_picker: ^13.1.0',
+                  '  file_picker: ^13.1.0\n'
+                  '  http: ^1.6.0\n'
+                  '  package_info_plus: ^10.2.1\n'
+                  '  open_filex: ^4.7.0\n'
+                  '  crypto: ^3.0.6'
+              )
+          pubspec.write_text(text)
+
+          shell = Path('meusdocs_app/lib/features/shared/main_shell.dart')
+          text = shell.read_text()
+          if "import '../profile/profile_screen.dart';" not in text:
+              text = text.replace(
+                  "import '../wallet/wallet_screen.dart';",
+                  "import '../wallet/wallet_screen.dart';\n"
+                  "import '../profile/profile_screen.dart';\n"
+                  "import '../../core/update/update_prompt.dart';"
+              )
+          if 'checkAndPromptForUpdate(context);' not in text:
+              text = text.replace(
+                  '  int index = 0;\n\n  final pages',
+                  '  int index = 0;\n\n'
+                  '  @override\n'
+                  '  void initState() {\n'
+                  '    super.initState();\n'
+                  '    WidgetsBinding.instance.addPostFrameCallback((_) {\n'
+                  '      checkAndPromptForUpdate(context);\n'
+                  '    });\n'
+                  '  }\n\n'
+                  '  final pages'
+              )
+          text = text.replace(
+              "    _Placeholder(title: 'Perfil'),",
+              '    ProfileScreen(),'
+          )
+          shell.write_text(text)
+          PY
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android platform files
+        working-directory: meusdocs_app
+        run: flutter create --platforms=android --org com.meusdocs .
+
+      - name: Add Android update permissions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path('meusdocs_app/android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text()
+          marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
+          permissions = (
+              '\n    <uses-permission android:name="android.permission.INTERNET" />'
+              '\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+          )
+          if 'android.permission.REQUEST_INSTALL_PACKAGES' not in text:
+              text = text.replace(marker, marker + permissions)
+          manifest.write_text(text)
+          PY
+
+      - name: Install dependencies
+        working-directory: meusdocs_app
+        run: flutter pub get
+
+      - name: Patch receive_sharing_intent JVM target
+        shell: bash
+        run: |
+          PLUGIN_DIR="$(find "$PUB_CACHE/hosted/pub.dev" -maxdepth 1 -type d -name 'receive_sharing_intent-1.8.1' | head -n 1)"
+          test -n "$PLUGIN_DIR"
+          cat >> "$PLUGIN_DIR/android/build.gradle" <<'EOF'
+
+          android {
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          }
+          EOF
+
+      - name: Configure stable beta signing
+        shell: bash
+        env:
+          BETA_KEYSTORE_B64: ${{ secrets.MEUSDOCS_BETA_KEYSTORE_B64 }}
+        run: |
+          mkdir -p "$HOME/.android"
+          printf '%s' "$BETA_KEYSTORE_B64" | base64 -d > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey >/dev/null
+
+      - name: Set build version
+        shell: bash
+        run: echo "APP_VERSION=0.5.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Analyze source
+        working-directory: meusdocs_app
+        run: flutter analyze lib --no-fatal-infos --no-fatal-warnings
+
+      - name: Build signed beta APK
+        working-directory: meusdocs_app
+        run: flutter build apk --debug --build-name="$APP_VERSION" --build-number="$GITHUB_RUN_NUMBER"
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          cp meusdocs_app/build/app/outputs/flutter-apk/app-debug.apk MeusDocs-beta.apk
+          sha256sum MeusDocs-beta.apk > MeusDocs-beta.apk.sha256
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$APP_VERSION"
+          REPO="lcsmjr/meus-docs-updates"
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" MeusDocs-beta.apk MeusDocs-beta.apk.sha256 --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" MeusDocs-beta.apk MeusDocs-beta.apk.sha256 \
+              --repo "$REPO" \
+              --title "MeusDocs Beta $APP_VERSION" \
+              --notes "Versão beta automática do MeusDocs para atualização interna do aplicativo."
+          fi
