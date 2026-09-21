@@ -1,1 +1,1 @@
-build v0.6.18 - integração Consulta Consolidada TCU
+build v0.6.20 - corrige bloqueio WAF do TCU com fallback oficial
