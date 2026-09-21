@@ -211,8 +211,19 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
 
-          BASE_CERT="$("$APKSIGNER" verify --print-certs "$BASELINE" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print $2; exit}')"
-          CUR_CERT="$("$APKSIGNER" verify --print-certs "$CURRENT" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {print $2; exit}')"
+          "$APKSIGNER" verify --print-certs "$BASELINE" > baseline-certs.txt
+          "$APKSIGNER" verify --print-certs "$CURRENT" > current-certs.txt
+
+          echo "--- Baseline signer information ---"
+          cat baseline-certs.txt
+          echo "--- Current signer information ---"
+          cat current-certs.txt
+
+          BASE_CERT="$(grep -i 'certificate SHA-256 digest' baseline-certs.txt | head -n 1 | sed 's/.*: *//')"
+          CUR_CERT="$(grep -i 'certificate SHA-256 digest' current-certs.txt | head -n 1 | sed 's/.*: *//')"
+
+          test -n "$BASE_CERT" || (echo "Could not read baseline signing certificate" && exit 1)
+          test -n "$CUR_CERT" || (echo "Could not read current signing certificate" && exit 1)
 
           BASE_PACKAGE="$("$AAPT" dump badging "$BASELINE" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)"
           CUR_PACKAGE="$("$AAPT" dump badging "$CURRENT" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)"
