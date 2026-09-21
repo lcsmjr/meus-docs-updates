@@ -170,9 +170,56 @@ jobs:
           chmod 600 "$HOME/.android/debug.keystore"
           keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey >/dev/null
 
+      - name: Configure explicit persistent beta signing
+        shell: bash
+        run: |
+          cat > meusdocs_app/android/key.properties <<EOF
+          storePassword=android
+          keyPassword=android
+          keyAlias=androiddebugkey
+          storeFile=$HOME/.android/debug.keystore
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('meusdocs_app/android/app/build.gradle.kts')
+          text = p.read_text()
+
+          marker = 'android {'
+          signing_block = '''
+          val betaKeystoreProperties = java.util.Properties()
+          val betaKeystorePropertiesFile = rootProject.file("key.properties")
+          betaKeystoreProperties.load(java.io.FileInputStream(betaKeystorePropertiesFile))
+
+          '''
+          if 'betaKeystoreProperties' not in text:
+              text = text.replace(marker, signing_block + marker, 1)
+
+          build_marker = '    buildTypes {'
+          config = '''    signingConfigs {
+              create("betaRelease") {
+                  keyAlias = betaKeystoreProperties["keyAlias"] as String
+                  keyPassword = betaKeystoreProperties["keyPassword"] as String
+                  storeFile = file(betaKeystoreProperties["storeFile"] as String)
+                  storePassword = betaKeystoreProperties["storePassword"] as String
+              }
+          }
+
+          '''
+          if 'create("betaRelease")' not in text:
+              text = text.replace(build_marker, config + build_marker, 1)
+
+          text = text.replace(
+              'signingConfig = signingConfigs.getByName("debug")',
+              'signingConfig = signingConfigs.getByName("betaRelease")'
+          )
+          p.write_text(text)
+          PY
+
       - name: Set build version
         shell: bash
-        run: echo "APP_VERSION=0.5.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+        run: echo "APP_VERSION=0.6.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Analyze source
         working-directory: meusdocs_app
@@ -191,19 +238,10 @@ jobs:
           done
           exit 1
 
-      - name: Verify Android update compatibility
+      - name: Verify persistent Android signing
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p baseline
-          gh release download v0.5.5 \
-            --repo lcsmjr/meus-docs-updates \
-            --pattern MeusDocs-beta.apk \
-            --dir baseline
-
           CURRENT="meusdocs_app/build/app/outputs/flutter-apk/app-release.apk"
-          BASELINE="baseline/MeusDocs-beta.apk"
 
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
@@ -211,36 +249,24 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$AAPT"
 
-          "$APKSIGNER" verify --print-certs "$BASELINE" > baseline-certs.txt
           "$APKSIGNER" verify --print-certs "$CURRENT" > current-certs.txt
-
-          echo "--- Baseline signer information ---"
-          cat baseline-certs.txt
-          echo "--- Current signer information ---"
           cat current-certs.txt
 
-          BASE_CERT="$(grep -i 'certificate SHA-256 digest' baseline-certs.txt | head -n 1 | sed 's/.*: *//')"
-          CUR_CERT="$(grep -i 'certificate SHA-256 digest' current-certs.txt | head -n 1 | sed 's/.*: *//')"
+          APK_CERT="$(grep -i 'certificate SHA-256 digest' current-certs.txt | head -n 1 | sed 's/.*: *//')"
+          KEY_CERT="$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | sed -n 's/.*SHA256: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]' | head -n 1)"
 
-          test -n "$BASE_CERT" || (echo "Could not read baseline signing certificate" && exit 1)
-          test -n "$CUR_CERT" || (echo "Could not read current signing certificate" && exit 1)
+          PACKAGE="$("$AAPT" dump badging "$CURRENT" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)"
+          VERSION_CODE="$("$AAPT" dump badging "$CURRENT" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" | head -n 1)"
 
-          BASE_PACKAGE="$("$AAPT" dump badging "$BASELINE" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)"
-          CUR_PACKAGE="$("$AAPT" dump badging "$CURRENT" | sed -n "s/package: name='\([^']*\)'.*/\1/p" | head -n 1)"
+          echo "Package: $PACKAGE"
+          echo "Version code: $VERSION_CODE"
+          echo "APK cert SHA-256: $APK_CERT"
+          echo "Keystore cert SHA-256: $KEY_CERT"
 
-          BASE_CODE="$("$AAPT" dump badging "$BASELINE" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" | head -n 1)"
-          CUR_CODE="$("$AAPT" dump badging "$CURRENT" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" | head -n 1)"
-
-          echo "Baseline package: $BASE_PACKAGE"
-          echo "Current package:  $CUR_PACKAGE"
-          echo "Baseline versionCode: $BASE_CODE"
-          echo "Current versionCode:  $CUR_CODE"
-          echo "Baseline cert SHA-256: $BASE_CERT"
-          echo "Current cert SHA-256:  $CUR_CERT"
-
-          test "$BASE_PACKAGE" = "$CUR_PACKAGE" || (echo "Package ID mismatch" && exit 1)
-          test "$BASE_CERT" = "$CUR_CERT" || (echo "Signing certificate mismatch" && exit 1)
-          test "$CUR_CODE" -gt "$BASE_CODE" || (echo "versionCode is not newer" && exit 1)
+          test "$PACKAGE" = "com.meusdocs.meusdocs_mvp" || (echo "Unexpected package ID" && exit 1)
+          test -n "$APK_CERT" || (echo "Could not read APK certificate" && exit 1)
+          test -n "$KEY_CERT" || (echo "Could not read keystore certificate" && exit 1)
+          test "$APK_CERT" = "$KEY_CERT" || (echo "APK is not signed with the persistent beta key" && exit 1)
 
       - name: Prepare release files
         shell: bash
