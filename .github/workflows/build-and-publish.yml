@@ -170,12 +170,12 @@ jobs:
 
       - name: Build signed beta APK
         working-directory: meusdocs_app
-        run: flutter build apk --debug --build-name="$APP_VERSION" --build-number="$GITHUB_RUN_NUMBER"
+        run: flutter build apk --release --build-name="$APP_VERSION" --build-number="$GITHUB_RUN_NUMBER"
 
       - name: Prepare release files
         shell: bash
         run: |
-          cp meusdocs_app/build/app/outputs/flutter-apk/app-debug.apk MeusDocs-beta.apk
+          cp meusdocs_app/build/app/outputs/flutter-apk/app-release.apk MeusDocs-beta.apk
           sha256sum MeusDocs-beta.apk > MeusDocs-beta.apk.sha256
 
       - name: Publish release
