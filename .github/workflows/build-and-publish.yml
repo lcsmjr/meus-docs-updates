@@ -47,10 +47,16 @@ jobs:
         shell: bash
         run: |
           mkdir -p meusdocs_app/lib/core/update
+          mkdir -p meusdocs_app/lib/core/services
           mkdir -p meusdocs_app/lib/features/profile
+          mkdir -p meusdocs_app/lib/features/shared
+          mkdir -p meusdocs_app/lib/features/wallet
           cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/update/update_prompt.dart meusdocs_app/lib/core/update/
+          cp source/ci/patches/lib/core/services/pending_share.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
+          cp source/ci/patches/lib/features/shared/share_intent_router.dart meusdocs_app/lib/features/shared/
+          cp source/ci/patches/lib/features/wallet/incoming_share_screen.dart meusdocs_app/lib/features/wallet/
 
           python3 - <<'PY'
           from pathlib import Path
@@ -96,6 +102,24 @@ jobs:
               '    ProfileScreen(),'
           )
           shell.write_text(text)
+
+          main = Path('meusdocs_app/lib/main.dart')
+          text = main.read_text()
+          if "share_intent_router.dart" not in text:
+              text = text.replace(
+                  "import 'features/shared/main_shell.dart';",
+                  "import 'features/shared/main_shell.dart';\n"
+                  "import 'features/shared/share_intent_router.dart';"
+              )
+          text = text.replace(
+              'home: const MainShell(),',
+              'home: const ShareIntentRouter(child: MainShell()),'
+          )
+          text = text.replace(
+              'home: MainShell(),',
+              'home: const ShareIntentRouter(child: MainShell()),'
+          )
+          main.write_text(text)
           PY
 
       - name: Setup Java
