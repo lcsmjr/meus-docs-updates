@@ -59,6 +59,7 @@ jobs:
           cp source/ci/patches/lib/core/services/pending_share.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/core/services/tcu_consolidated_service.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/core/services/transparency_sanctions_service.dart meusdocs_app/lib/core/services/
+          cp source/ci/patches/lib/core/services/integrity_report_service.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/core/vault/document_classifier.dart meusdocs_app/lib/core/vault/
           cp source/ci/patches/lib/features/company/company_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/company/tcu_company_query_screen.dart meusdocs_app/lib/features/company/
@@ -88,6 +89,12 @@ jobs:
                   '  crypto: ^3.0.6',
                   '  crypto: ^3.0.6\n'
                   '  url_launcher: ^6.3.2'
+              )
+          if '  pdf: ^3.11.3' not in text:
+              text = text.replace(
+                  '  url_launcher: ^6.3.2',
+                  '  url_launcher: ^6.3.2\n'
+                  '  pdf: ^3.11.3'
               )
           pubspec.write_text(text)
 
