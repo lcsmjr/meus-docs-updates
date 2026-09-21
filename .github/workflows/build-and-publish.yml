@@ -57,6 +57,7 @@ jobs:
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
           cp source/ci/patches/lib/features/shared/share_intent_router.dart meusdocs_app/lib/features/shared/
           cp source/ci/patches/lib/features/wallet/incoming_share_screen.dart meusdocs_app/lib/features/wallet/
+          cp source/ci/patches/lib/features/wallet/wallet_screen.dart meusdocs_app/lib/features/wallet/
 
           python3 - <<'PY'
           from pathlib import Path
