@@ -187,10 +187,14 @@ jobs:
           text = p.read_text()
 
           marker = 'android {'
+          imports = 'import java.util.Properties\nimport java.io.FileInputStream\n\n'
+          if 'import java.util.Properties' not in text:
+              text = imports + text
+
           signing_block = '''
-          val betaKeystoreProperties = java.util.Properties()
+          val betaKeystoreProperties = Properties()
           val betaKeystorePropertiesFile = rootProject.file("key.properties")
-          betaKeystoreProperties.load(java.io.FileInputStream(betaKeystorePropertiesFile))
+          betaKeystoreProperties.load(FileInputStream(betaKeystorePropertiesFile))
 
           '''
           if 'betaKeystoreProperties' not in text:
