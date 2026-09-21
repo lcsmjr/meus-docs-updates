@@ -80,6 +80,12 @@ jobs:
                   '  open_filex: ^4.7.0\n'
                   '  crypto: ^3.0.6'
               )
+          if '  url_launcher: ^6.3.2' not in text:
+              text = text.replace(
+                  '  crypto: ^3.0.6',
+                  '  crypto: ^3.0.6\n'
+                  '  url_launcher: ^6.3.2'
+              )
           pubspec.write_text(text)
 
           shell = Path('meusdocs_app/lib/features/shared/main_shell.dart')
