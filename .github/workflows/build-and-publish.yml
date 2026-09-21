@@ -111,6 +111,16 @@ jobs:
         working-directory: meusdocs_app
         run: flutter create --platforms=android --org com.meusdocs .
 
+      - name: Use smaller Gradle distribution
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('meusdocs_app/android/gradle/wrapper/gradle-wrapper.properties')
+          text = p.read_text().replace('-all.zip', '-bin.zip')
+          p.write_text(text)
+          PY
+
       - name: Add Android update permissions
         shell: bash
         run: |
@@ -170,7 +180,16 @@ jobs:
 
       - name: Build signed beta APK
         working-directory: meusdocs_app
-        run: flutter build apk --release --build-name="$APP_VERSION" --build-number="$GITHUB_RUN_NUMBER"
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            flutter build apk --release --build-name="$APP_VERSION" --build-number="$GITHUB_RUN_NUMBER" && exit 0
+            if [ "$attempt" -lt 3 ]; then
+              echo "Build failed on attempt $attempt; retrying transient downloads..."
+              sleep 15
+            fi
+          done
+          exit 1
 
       - name: Prepare release files
         shell: bash
