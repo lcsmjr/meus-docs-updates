@@ -48,12 +48,18 @@ jobs:
         run: |
           mkdir -p meusdocs_app/lib/core/update
           mkdir -p meusdocs_app/lib/core/services
+          mkdir -p meusdocs_app/lib/core/vault
+          mkdir -p meusdocs_app/lib/features/company
           mkdir -p meusdocs_app/lib/features/profile
           mkdir -p meusdocs_app/lib/features/shared
           mkdir -p meusdocs_app/lib/features/wallet
           cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/update/update_prompt.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/services/pending_share.dart meusdocs_app/lib/core/services/
+          cp source/ci/patches/lib/core/services/tcu_consolidated_service.dart meusdocs_app/lib/core/services/
+          cp source/ci/patches/lib/core/vault/document_classifier.dart meusdocs_app/lib/core/vault/
+          cp source/ci/patches/lib/features/company/company_screen.dart meusdocs_app/lib/features/company/
+          cp source/ci/patches/lib/features/company/tcu_company_query_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
           cp source/ci/patches/lib/features/shared/share_intent_router.dart meusdocs_app/lib/features/shared/
           cp source/ci/patches/lib/features/wallet/incoming_share_screen.dart meusdocs_app/lib/features/wallet/
