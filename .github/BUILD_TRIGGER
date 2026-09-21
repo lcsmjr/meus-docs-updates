@@ -1,1 +1,1 @@
-build v0.6.20 - corrige bloqueio WAF do TCU com fallback oficial
+build v0.6.21 - integra TCU, CEIS, CNEP e fluxo oficial CNJ
