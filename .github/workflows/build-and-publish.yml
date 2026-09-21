@@ -111,6 +111,16 @@ jobs:
         working-directory: meusdocs_app
         run: flutter create --platforms=android --org com.meusdocs .
 
+      - name: Set Android app name
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('meusdocs_app/android/app/src/main/AndroidManifest.xml')
+          text = p.read_text().replace('android:label="meusdocs_mvp"', 'android:label="MeusDocs"')
+          p.write_text(text)
+          PY
+
       - name: Use smaller Gradle distribution
         shell: bash
         run: |
