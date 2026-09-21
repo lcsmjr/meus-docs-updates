@@ -133,13 +133,15 @@ jobs:
           p.write_text(text)
           PY
 
-      - name: Add Android update permissions
+      - name: Configure Android permissions and share target
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+
           manifest = Path('meusdocs_app/android/app/src/main/AndroidManifest.xml')
           text = manifest.read_text()
+
           marker = '<manifest xmlns:android="http://schemas.android.com/apk/res/android">'
           permissions = (
               '\n    <uses-permission android:name="android.permission.INTERNET" />'
@@ -147,6 +149,74 @@ jobs:
           )
           if 'android.permission.REQUEST_INSTALL_PACKAGES' not in text:
               text = text.replace(marker, marker + permissions)
+
+          # O plugin recomenda singleTask para receber novos intents
+          # sem abrir múltiplas instâncias da MainActivity.
+          text = text.replace(
+              'android:launchMode="singleTop"',
+              'android:launchMode="singleTask"'
+          )
+
+          share_filters = r'''
+                <!-- MeusDocs: receber arquivos compartilhados -->
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="application/pdf" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="image/*" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="application/pkcs7-signature" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="application/x-pkcs7-signature" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND_MULTIPLE" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="application/pdf" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.SEND_MULTIPLE" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:mimeType="image/*" />
+                </intent-filter>
+
+                <!-- MeusDocs: aparecer em "Abrir com" para documentos locais -->
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:scheme="content" android:mimeType="application/pdf" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:scheme="content" android:mimeType="image/*" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:scheme="content" android:mimeType="application/pkcs7-signature" />
+                </intent-filter>
+                <intent-filter>
+                    <action android:name="android.intent.action.VIEW" />
+                    <category android:name="android.intent.category.DEFAULT" />
+                    <data android:scheme="content" android:mimeType="application/x-pkcs7-signature" />
+                </intent-filter>
+          '''
+
+          if 'MeusDocs: receber arquivos compartilhados' not in text:
+              insertion = '</activity>'
+              text = text.replace(insertion, share_filters + '\n            ' + insertion, 1)
+
           manifest.write_text(text)
           PY
 
