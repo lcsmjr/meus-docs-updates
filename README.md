@@ -10,3 +10,5 @@ Este repositório contém apenas releases/APKs de teste e informações de atual
 ## Canal automático
 
 As releases beta são compiladas e publicadas automaticamente pelo GitHub Actions.
+
+- APKs beta agora são gerados em modo release e o atualizador possui retentativas automáticas para falhas transitórias de rede.
