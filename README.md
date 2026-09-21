@@ -14,3 +14,5 @@ As releases beta são compiladas e publicadas automaticamente pelo GitHub Action
 - APKs beta agora são gerados em modo release e o atualizador possui retentativas automáticas para falhas transitórias de rede.
 
 - Teste de atualização interna preparado para v0.5.6.
+
+- Pipeline de assinatura persistente validado para nova base beta.
