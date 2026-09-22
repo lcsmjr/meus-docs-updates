@@ -282,6 +282,28 @@ jobs:
         working-directory: meusdocs_app
         run: flutter pub get
 
+      - name: Patch flutter_inappwebview Android ProGuard compatibility
+        shell: bash
+        run: |
+          PLUGIN_GRADLE="$(find "$PUB_CACHE/hosted/pub.dev" -path '*/flutter_inappwebview_android-*/android/build.gradle' | head -n 1)"
+          test -n "$PLUGIN_GRADLE"
+          python3 - "$PLUGIN_GRADLE" <<'PY'
+          from pathlib import Path
+          import sys
+
+          p = Path(sys.argv[1])
+          text = p.read_text()
+          old = "getDefaultProguardFile('proguard-android.txt')"
+          new = "getDefaultProguardFile('proguard-android-optimize.txt')"
+
+          if old in text:
+              text = text.replace(old, new)
+              p.write_text(text)
+
+          if old in p.read_text():
+              raise SystemExit("flutter_inappwebview ProGuard compatibility patch failed")
+          PY
+
       - name: Patch receive_sharing_intent JVM target
         shell: bash
         run: |
