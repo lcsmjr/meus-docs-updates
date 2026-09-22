@@ -58,6 +58,7 @@ jobs:
           mkdir -p meusdocs_app/lib/features/wallet
           cp source/ci/patches/lib/core/official_documents/official_document_catalog.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/official_documents/official_document_engine.dart meusdocs_app/lib/core/official_documents/
+          cp source/ci/patches/lib/core/official_documents/official_document_portal_adapter.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/update/update_prompt.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/services/pending_share.dart meusdocs_app/lib/core/services/
