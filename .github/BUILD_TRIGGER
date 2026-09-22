@@ -1,1 +1,1 @@
-build v0.6.25 - corrige CND, captura CNDT/CRF e abertura da carteira
+build v0.6.26 - identifica documentos na carteira e corrige carregamento CRF
