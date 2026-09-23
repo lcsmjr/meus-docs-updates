@@ -51,6 +51,7 @@ jobs:
           mkdir -p meusdocs_app/lib/core/services
           mkdir -p meusdocs_app/lib/core/vault
           mkdir -p meusdocs_app/lib/features/company
+          mkdir -p meusdocs_app/lib/features/documents
           mkdir -p meusdocs_app/lib/features/official_documents
           mkdir -p meusdocs_app/lib/features/profile
           mkdir -p meusdocs_app/lib/features/settings
@@ -70,6 +71,7 @@ jobs:
           cp source/ci/patches/lib/core/vault/document_classifier.dart meusdocs_app/lib/core/vault/
           cp source/ci/patches/lib/features/company/company_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/company/tcu_company_query_screen.dart meusdocs_app/lib/features/company/
+          cp source/ci/patches/lib/features/documents/category_documents_screen.dart meusdocs_app/lib/features/documents/
           cp source/ci/patches/lib/features/official_documents/official_document_browser_screen.dart meusdocs_app/lib/features/official_documents/
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
           cp source/ci/patches/lib/features/settings/transparency_api_settings_screen.dart meusdocs_app/lib/features/settings/
@@ -86,6 +88,15 @@ jobs:
           pubspec = Path('meusdocs_app/pubspec.yaml')
           text = pubspec.read_text()
           text = text.replace('version: 0.1.0+1', 'version: 0.5.0+1')
+          if '  flutter_localizations:' not in text:
+              text = text.replace(
+                  'dependencies:\n  flutter:\n    sdk: flutter\n',
+                  'dependencies:\n'
+                  '  flutter:\n'
+                  '    sdk: flutter\n'
+                  '  flutter_localizations:\n'
+                  '    sdk: flutter\n'
+              )
           if '  http: ^1.6.0' not in text:
               text = text.replace(
                   '  file_picker: ^13.1.0',
@@ -162,6 +173,25 @@ jobs:
 
           main = Path('meusdocs_app/lib/main.dart')
           text = main.read_text()
+          if "package:flutter_localizations/flutter_localizations.dart" not in text:
+              text = text.replace(
+                  "import 'package:flutter/material.dart';",
+                  "import 'package:flutter/material.dart';\n"
+                  "import 'package:flutter_localizations/flutter_localizations.dart';"
+              )
+          if 'GlobalMaterialLocalizations.delegate' not in text:
+              text = text.replace(
+                  'MaterialApp(\n',
+                  "MaterialApp(\n"
+                  "      locale: const Locale('pt', 'BR'),\n"
+                  "      supportedLocales: const [Locale('pt', 'BR')],\n"
+                  "      localizationsDelegates: const [\n"
+                  "        GlobalMaterialLocalizations.delegate,\n"
+                  "        GlobalWidgetsLocalizations.delegate,\n"
+                  "        GlobalCupertinoLocalizations.delegate,\n"
+                  "      ],\n",
+                  1
+              )
           if "share_intent_router.dart" not in text:
               text = text.replace(
                   "import 'features/shared/main_shell.dart';",
