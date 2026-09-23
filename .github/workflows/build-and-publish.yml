@@ -440,23 +440,47 @@ jobs:
       - name: Patch flutter_inappwebview Android ProGuard compatibility
         shell: bash
         run: |
-          PLUGIN_GRADLE="$(find "$PUB_CACHE/hosted/pub.dev" -path '*/flutter_inappwebview_android-*/android/build.gradle' | head -n 1)"
-          test -n "$PLUGIN_GRADLE"
-          python3 - "$PLUGIN_GRADLE" <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          import sys
+          import os
 
-          p = Path(sys.argv[1])
-          text = p.read_text()
+          pub_cache = Path(os.environ["PUB_CACHE"])
+          files = list(
+              pub_cache.glob(
+                  "hosted/pub.dev/flutter_inappwebview_android-*/android/build.gradle"
+              )
+          )
+
+          if not files:
+              raise SystemExit(
+                  "flutter_inappwebview_android build.gradle not found"
+              )
+
           old = "getDefaultProguardFile('proguard-android.txt')"
           new = "getDefaultProguardFile('proguard-android-optimize.txt')"
 
-          if old in text:
-              text = text.replace(old, new)
-              p.write_text(text)
+          patched = 0
+          for p in files:
+              text = p.read_text()
+              if old in text:
+                  p.write_text(text.replace(old, new))
+                  patched += 1
 
-          if old in p.read_text():
-              raise SystemExit("flutter_inappwebview ProGuard compatibility patch failed")
+          remaining = [
+              str(p)
+              for p in files
+              if old in p.read_text()
+          ]
+          if remaining:
+              raise SystemExit(
+                  "ProGuard compatibility patch failed for: "
+                  + ", ".join(remaining)
+              )
+
+          print(
+              f"Checked {len(files)} flutter_inappwebview Android plugin(s); "
+              f"patched {patched}."
+          )
           PY
 
       - name: Patch receive_sharing_intent JVM target
