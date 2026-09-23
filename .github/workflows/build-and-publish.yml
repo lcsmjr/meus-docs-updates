@@ -72,6 +72,7 @@ jobs:
           cp source/ci/patches/lib/core/vault/document_classifier.dart meusdocs_app/lib/core/vault/
           cp source/ci/patches/lib/features/company/company_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/company/tcu_company_query_screen.dart meusdocs_app/lib/features/company/
+          cp source/ci/patches/lib/features/company/state_certificate_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/documents/category_documents_screen.dart meusdocs_app/lib/features/documents/
           cp source/ci/patches/lib/features/official_documents/official_document_browser_screen.dart meusdocs_app/lib/features/official_documents/
           cp source/ci/patches/lib/features/personal/personal_services_screen.dart meusdocs_app/lib/features/personal/
