@@ -161,11 +161,11 @@ jobs:
               )
           text = text.replace(
               'home: const MainShell(),',
-              'home: const ShareIntentRouter(child: MainShell()),'
+              'home: const StartupSplash(child: ShareIntentRouter(child: MainShell())), '
           )
           text = text.replace(
               'home: MainShell(),',
-              'home: const ShareIntentRouter(child: MainShell()),'
+              'home: const StartupSplash(child: ShareIntentRouter(child: MainShell())), '
           )
           main.write_text(text)
           PY
