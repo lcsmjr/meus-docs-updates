@@ -53,6 +53,7 @@ jobs:
           mkdir -p meusdocs_app/lib/features/company
           mkdir -p meusdocs_app/lib/features/documents
           mkdir -p meusdocs_app/lib/features/official_documents
+          mkdir -p meusdocs_app/lib/features/personal
           mkdir -p meusdocs_app/lib/features/profile
           mkdir -p meusdocs_app/lib/features/settings
           mkdir -p meusdocs_app/lib/features/shared
@@ -73,6 +74,8 @@ jobs:
           cp source/ci/patches/lib/features/company/tcu_company_query_screen.dart meusdocs_app/lib/features/company/
           cp source/ci/patches/lib/features/documents/category_documents_screen.dart meusdocs_app/lib/features/documents/
           cp source/ci/patches/lib/features/official_documents/official_document_browser_screen.dart meusdocs_app/lib/features/official_documents/
+          cp source/ci/patches/lib/features/personal/personal_services_screen.dart meusdocs_app/lib/features/personal/
+          cp source/ci/patches/lib/features/personal/trusted_portal_screen.dart meusdocs_app/lib/features/personal/
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
           cp source/ci/patches/lib/features/settings/transparency_api_settings_screen.dart meusdocs_app/lib/features/settings/
           cp source/ci/patches/lib/features/shared/share_intent_router.dart meusdocs_app/lib/features/shared/
