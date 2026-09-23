@@ -61,6 +61,7 @@ jobs:
           cp source/ci/patches/lib/core/official_documents/official_document_portal_adapter.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/update/update_prompt.dart meusdocs_app/lib/core/update/
+          cp source/ci/patches/lib/core/update/update_notification_service.dart meusdocs_app/lib/core/update/
           cp source/ci/patches/lib/core/services/pending_share.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/core/services/tcu_consolidated_service.dart meusdocs_app/lib/core/services/
           cp source/ci/patches/lib/core/services/transparency_sanctions_service.dart meusdocs_app/lib/core/services/
@@ -108,6 +109,13 @@ jobs:
                   '  pdf: ^3.11.3\n'
                   '  flutter_inappwebview: ^6.1.5'
               )
+          if '  flutter_local_notifications: ^22.3.1' not in text:
+              text = text.replace(
+                  '  flutter_inappwebview: ^6.1.5',
+                  '  flutter_inappwebview: ^6.1.5\n'
+                  '  flutter_local_notifications: ^22.3.1\n'
+                  '  workmanager: ^0.10.10'
+              )
           pubspec.write_text(text)
 
           shell = Path('meusdocs_app/lib/features/shared/main_shell.dart')
@@ -117,7 +125,8 @@ jobs:
                   "import '../wallet/wallet_screen.dart';",
                   "import '../wallet/wallet_screen.dart';\n"
                   "import '../profile/profile_screen.dart';\n"
-                  "import '../../core/update/update_prompt.dart';"
+                  "import '../../core/update/update_prompt.dart';\n"
+                  "import '../../core/update/update_notification_service.dart';"
               )
           if 'checkAndPromptForUpdate(context);' not in text:
               text = text.replace(
@@ -127,6 +136,7 @@ jobs:
                   '  void initState() {\n'
                   '    super.initState();\n'
                   '    WidgetsBinding.instance.addPostFrameCallback((_) {\n'
+                  '      UpdateNotificationService.instance.initializeAndSchedule();\n'
                   '      checkAndPromptForUpdate(context);\n'
                   '    });\n'
                   '  }\n\n'
@@ -189,6 +199,42 @@ jobs:
           from pathlib import Path
           p = Path('meusdocs_app/android/gradle/wrapper/gradle-wrapper.properties')
           text = p.read_text().replace('-all.zip', '-bin.zip')
+          p.write_text(text)
+          PY
+
+      - name: Configure notification Gradle support
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('meusdocs_app/android/app/build.gradle.kts')
+          text = p.read_text()
+
+          text = text.replace(
+              'sourceCompatibility = JavaVersion.VERSION_11',
+              'sourceCompatibility = JavaVersion.VERSION_17'
+          )
+          text = text.replace(
+              'targetCompatibility = JavaVersion.VERSION_11',
+              'targetCompatibility = JavaVersion.VERSION_17'
+          )
+
+          if 'isCoreLibraryDesugaringEnabled = true' not in text:
+              text = text.replace(
+                  'compileOptions {',
+                  'compileOptions {\n        isCoreLibraryDesugaringEnabled = true',
+                  1
+              )
+
+          if 'desugar_jdk_libs:2.1.4' not in text:
+              text += '''
+              
+          dependencies {
+              coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+          }
+          '''
+
           p.write_text(text)
           PY
 
