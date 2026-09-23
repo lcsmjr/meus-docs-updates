@@ -73,6 +73,8 @@ jobs:
           cp source/ci/patches/lib/features/profile/profile_screen.dart meusdocs_app/lib/features/profile/
           cp source/ci/patches/lib/features/settings/transparency_api_settings_screen.dart meusdocs_app/lib/features/settings/
           cp source/ci/patches/lib/features/shared/share_intent_router.dart meusdocs_app/lib/features/shared/
+          cp source/ci/patches/lib/features/shared/brand_logo.dart meusdocs_app/lib/features/shared/
+          cp source/ci/patches/lib/features/shared/startup_splash.dart meusdocs_app/lib/features/shared/
           cp source/ci/patches/lib/features/wallet/incoming_share_screen.dart meusdocs_app/lib/features/wallet/
           cp source/ci/patches/lib/features/wallet/wallet_screen.dart meusdocs_app/lib/features/wallet/
 
@@ -154,7 +156,8 @@ jobs:
               text = text.replace(
                   "import 'features/shared/main_shell.dart';",
                   "import 'features/shared/main_shell.dart';\n"
-                  "import 'features/shared/share_intent_router.dart';"
+                  "import 'features/shared/share_intent_router.dart';\n"
+                  "import 'features/shared/startup_splash.dart';"
               )
           text = text.replace(
               'home: const MainShell(),',
@@ -181,6 +184,48 @@ jobs:
       - name: Create Android platform files
         working-directory: meusdocs_app
         run: flutter create --platforms=android --org com.meusdocs .
+
+      - name: Create MeusDocs launcher vector
+        shell: bash
+        run: |
+          mkdir -p meusdocs_app/android/app/src/main/res/drawable
+          cat > meusdocs_app/android/app/src/main/res/drawable/meusdocs_launcher.xml <<'XML'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:fillColor="#0B4DB9"
+                  android:pathData="M8,8h92v92h-92z" />
+              <path
+                  android:fillColor="#12AEB2"
+                  android:pathData="M24,26h46a8,8 0,0 1,8 8v44a8,8 0,0 1,-8 8h-46a8,8 0,0 1,-8 -8v-44a8,8 0,0 1,8 -8z" />
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M32,18h42a8,8 0,0 1,8 8v48a8,8 0,0 1,-8 8h-42a8,8 0,0 1,-8 -8v-48a8,8 0,0 1,8 -8z" />
+              <path
+                  android:fillColor="#7DAFE0"
+                  android:pathData="M39,36h28v5h-28zM39,48h34v5h-34zM39,60h22v5h-22z" />
+              <path
+                  android:fillColor="#0A63C7"
+                  android:pathData="M65,58l16,-8l16,8v17c0,11 -7,20 -16,25c-9,-5 -16,-14 -16,-25z" />
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M73,73l6,6l11,-13l4,4l-15,17l-10,-10z" />
+          </vector>
+          XML
+
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path('meusdocs_app/android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text()
+          text = text.replace(
+              'android:icon="@mipmap/ic_launcher"',
+              'android:icon="@drawable/meusdocs_launcher"'
+          )
+          manifest.write_text(text)
+          PY
 
       - name: Set Android app name
         shell: bash
