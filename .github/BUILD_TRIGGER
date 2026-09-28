@@ -1,1 +1,1 @@
-build v0.6.40 - navegador nativo interno para CRF e estadual, evitando tela preta
+build v0.6.41 - usa Chrome Custom Tabs para CRF e estadual e elimina WebView branco
