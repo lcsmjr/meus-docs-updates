@@ -60,6 +60,8 @@ jobs:
           mkdir -p meusdocs_app/lib/features/wallet
           cp source/ci/patches/lib/core/official_documents/official_document_catalog.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/official_documents/official_document_engine.dart meusdocs_app/lib/core/official_documents/
+          cp source/ci/patches/lib/core/official_documents/native_form_connector.dart meusdocs_app/lib/core/official_documents/
+          cp source/ci/patches/lib/core/official_documents/bahia_state_certificate_connector.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/official_documents/official_document_metadata_extractor.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/official_documents/official_document_portal_adapter.dart meusdocs_app/lib/core/official_documents/
           cp source/ci/patches/lib/core/update/app_update_service.dart meusdocs_app/lib/core/update/
@@ -144,6 +146,12 @@ jobs:
                   '  pdfrx: ^2.4.8\n'
                   '  share_plus: ^13.3.0\n'
                   '  cross_file: ^0.3.5+5'
+              )
+          if '  html: ^0.15.6' not in text:
+              text = text.replace(
+                  '  cross_file: ^0.3.5+5',
+                  '  cross_file: ^0.3.5+5\n'
+                  '  html: ^0.15.6'
               )
           pubspec.write_text(text)
 
