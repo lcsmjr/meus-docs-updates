@@ -427,6 +427,10 @@ jobs:
       - name: Install native certificate capture bridge
         shell: bash
         run: |
+          find meusdocs_app/android/app/src/main -type f \
+            \( -name 'MainActivity.kt' -o -name 'MainActivity.java' \) \
+            -delete
+
           mkdir -p meusdocs_app/android/app/src/main/kotlin/com/meusdocs/meusdocs_mvp
           mkdir -p meusdocs_app/android/app/src/main/java/com/meusdocs/meusdocs_mvp
 
