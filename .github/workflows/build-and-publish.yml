@@ -476,6 +476,8 @@ jobs:
 
           cp source/ci/patches/android/MainActivity.kt \
             meusdocs_app/android/app/src/main/kotlin/com/meusdocs/meusdocs_mvp/MainActivity.kt
+          cp source/ci/patches/android/UpdateAlarmReceiver.kt \
+            meusdocs_app/android/app/src/main/kotlin/com/meusdocs/meusdocs_mvp/UpdateAlarmReceiver.kt
           cp source/ci/patches/android/CertificateCaptureActivity.java \
             meusdocs_app/android/app/src/main/java/com/meusdocs/meusdocs_mvp/CertificateCaptureActivity.java
 
@@ -501,6 +503,24 @@ jobs:
                   1
               )
 
+          if '.UpdateAlarmReceiver' not in text:
+              receiver = '''
+              <receiver
+                  android:name=".UpdateAlarmReceiver"
+                  android:enabled="true"
+                  android:exported="false">
+                  <intent-filter>
+                      <action android:name="android.intent.action.BOOT_COMPLETED" />
+                      <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                  </intent-filter>
+              </receiver>
+              '''
+              text = text.replace(
+                  '</application>',
+                  receiver + '\n    </application>',
+                  1
+              )
+
           manifest.write_text(text)
           PY
 
@@ -518,6 +538,7 @@ jobs:
               '\n    <uses-permission android:name="android.permission.INTERNET" />'
               '\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
               '\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
+              '\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />'
           )
           if 'android.permission.POST_NOTIFICATIONS' not in text:
               text = text.replace(marker, marker + permissions)
