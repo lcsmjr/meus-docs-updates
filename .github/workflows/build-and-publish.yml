@@ -245,6 +245,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p meusdocs_app/android/app/src/main/res/drawable
+          if [ -d source/ci/patches/android/res ]; then
+            cp -R source/ci/patches/android/res/. meusdocs_app/android/app/src/main/res/
+          fi
           mkdir -p meusdocs_app/android/app/src/main/res/mipmap-anydpi
           mkdir -p meusdocs_app/android/app/src/main/res/mipmap-anydpi-v26
           mkdir -p meusdocs_app/android/app/src/main/res/values
@@ -477,8 +480,9 @@ jobs:
           permissions = (
               '\n    <uses-permission android:name="android.permission.INTERNET" />'
               '\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />'
+              '\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
           )
-          if 'android.permission.REQUEST_INSTALL_PACKAGES' not in text:
+          if 'android.permission.POST_NOTIFICATIONS' not in text:
               text = text.replace(marker, marker + permissions)
 
           # O plugin recomenda singleTask para receber novos intents
