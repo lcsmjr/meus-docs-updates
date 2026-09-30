@@ -17,7 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout private source
@@ -107,53 +107,53 @@ jobs:
                   '  flutter_localizations:\n'
                   '    sdk: flutter\n'
               )
-          if '  http: ^1.6.0' not in text:
+          if '  http: 1.6.0' not in text:
               text = text.replace(
                   '  file_picker: ^13.1.0',
                   '  file_picker: ^13.1.0\n'
-                  '  http: ^1.6.0\n'
-                  '  package_info_plus: ^10.2.1\n'
-                  '  open_filex: ^4.7.0\n'
-                  '  crypto: ^3.0.6'
+                  '  http: 1.6.0\n'
+                  '  package_info_plus: 10.2.1\n'
+                  '  open_filex: 4.7.0\n'
+                  '  crypto: 3.0.7'
               )
-          if '  url_launcher: ^6.3.2' not in text:
+          if '  url_launcher: 6.3.2' not in text:
               text = text.replace(
-                  '  crypto: ^3.0.6',
-                  '  crypto: ^3.0.6\n'
-                  '  url_launcher: ^6.3.2'
+                  '  crypto: 3.0.7',
+                  '  crypto: 3.0.7\n'
+                  '  url_launcher: 6.3.2'
               )
-          if '  pdf: ^3.11.3' not in text:
+          if '  pdf: 3.12.0' not in text:
               text = text.replace(
-                  '  url_launcher: ^6.3.2',
-                  '  url_launcher: ^6.3.2\n'
-                  '  pdf: ^3.11.3'
+                  '  url_launcher: 6.3.2',
+                  '  url_launcher: 6.3.2\n'
+                  '  pdf: 3.12.0'
               )
-          if '  flutter_inappwebview: ^6.1.5' not in text:
+          if '  flutter_inappwebview: 6.1.5' not in text:
               text = text.replace(
-                  '  pdf: ^3.11.3',
-                  '  pdf: ^3.11.3\n'
-                  '  flutter_inappwebview: ^6.1.5'
+                  '  pdf: 3.12.0',
+                  '  pdf: 3.12.0\n'
+                  '  flutter_inappwebview: 6.1.5'
               )
-          if '  flutter_local_notifications: ^22.3.1' not in text:
+          if '  flutter_local_notifications: 19.5.0' not in text:
               text = text.replace(
-                  '  flutter_inappwebview: ^6.1.5',
-                  '  flutter_inappwebview: ^6.1.5\n'
-                  '  flutter_local_notifications: ^22.3.1\n'
-                  '  workmanager: ^0.10.10'
+                  '  flutter_inappwebview: 6.1.5',
+                  '  flutter_inappwebview: 6.1.5\n'
+                  '  flutter_local_notifications: 19.5.0\n'
+                  '  workmanager: 0.10.10'
               )
-          if '  pdfrx: ^2.4.8' not in text:
+          if '  pdfrx: 2.6.5' not in text:
               text = text.replace(
-                  '  workmanager: ^0.10.10',
-                  '  workmanager: ^0.10.10\n'
-                  '  pdfrx: ^2.4.8\n'
-                  '  share_plus: ^13.3.0\n'
-                  '  cross_file: ^0.3.5+5'
+                  '  workmanager: 0.10.10',
+                  '  workmanager: 0.10.10\n'
+                  '  pdfrx: 2.6.5\n'
+                  '  share_plus: 13.3.0\n'
+                  '  cross_file: 0.3.5+5'
               )
-          if '  html: ^0.15.6' not in text:
+          if '  html: 0.15.7' not in text:
               text = text.replace(
-                  '  cross_file: ^0.3.5+5',
-                  '  cross_file: ^0.3.5+5\n'
-                  '  html: ^0.15.6'
+                  '  cross_file: 0.3.5+5',
+                  '  cross_file: 0.3.5+5\n'
+                  '  html: 0.15.7'
               )
           pubspec.write_text(text)
 
@@ -235,11 +235,48 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.47.5'
           channel: stable
 
       - name: Create Android platform files
         working-directory: meusdocs_app
-        run: flutter create --platforms=android --org com.meusdocs .
+        run: flutter create --no-pub --platforms=android --org com.meusdocs .
+
+      - name: Stabilize Android toolchain
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          settings = Path('meusdocs_app/android/settings.gradle.kts')
+          text = settings.read_text()
+          text = re.sub(
+              r'id\("com\.android\.application"\)\s+version\s+"[^"]+"',
+              'id("com.android.application") version "8.13.2"',
+              text,
+          )
+          settings.write_text(text)
+
+          wrapper = Path(
+              'meusdocs_app/android/gradle/wrapper/gradle-wrapper.properties'
+          )
+          text = wrapper.read_text()
+          text = re.sub(
+              r'gradle-[0-9.]+-(?:all|bin)\.zip',
+              'gradle-8.14.5-bin.zip',
+              text,
+          )
+          wrapper.write_text(text)
+
+          props = Path('meusdocs_app/android/gradle.properties')
+          text = props.read_text()
+          if 'android.newDsl=' not in text:
+              text += '\nandroid.newDsl=false'
+          if 'android.builtInKotlin=' not in text:
+              text += '\nandroid.builtInKotlin=false'
+          props.write_text(text + '\n')
+          PY
 
       - name: Create MeusDocs adaptive launcher icon
         shell: bash
@@ -558,52 +595,6 @@ jobs:
       - name: Install dependencies
         working-directory: meusdocs_app
         run: flutter pub get
-
-      - name: Patch flutter_inappwebview Android ProGuard compatibility
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import os
-
-          pub_cache = Path(os.environ["PUB_CACHE"])
-          files = list(
-              pub_cache.glob(
-                  "hosted/pub.dev/flutter_inappwebview_android-*/android/build.gradle"
-              )
-          )
-
-          if not files:
-              raise SystemExit(
-                  "flutter_inappwebview_android build.gradle not found"
-              )
-
-          old = "getDefaultProguardFile('proguard-android.txt')"
-          new = "getDefaultProguardFile('proguard-android-optimize.txt')"
-
-          patched = 0
-          for p in files:
-              text = p.read_text()
-              if old in text:
-                  p.write_text(text.replace(old, new))
-                  patched += 1
-
-          remaining = [
-              str(p)
-              for p in files
-              if old in p.read_text()
-          ]
-          if remaining:
-              raise SystemExit(
-                  "ProGuard compatibility patch failed for: "
-                  + ", ".join(remaining)
-              )
-
-          print(
-              f"Checked {len(files)} flutter_inappwebview Android plugin(s); "
-              f"patched {patched}."
-          )
-          PY
 
       - name: Patch receive_sharing_intent JVM target
         shell: bash
